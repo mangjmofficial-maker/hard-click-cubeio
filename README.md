@@ -1,2 +1,269 @@
-# hard-click-cubeio
-3D Rubik's Cube Trainer
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hard Click Cube – 3D Rubik’s Cube + OLL/PLL Trainer</title>
+<style>
+:root{--bg:#f3f4fb;--bg2:#d9def5;--fg:#14172b;--card:rgba(255,255,255,.72);--line:rgba(20,23,43,.16);--mute:#59607f;--a:#0891b2;--b:#c026d3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#07081a;--bg2:#1b1040;--fg:#e8ecff;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.14);--mute:#9aa3cf;--a:#22d3ee;--b:#e879f9}}
+:root[data-theme="dark"]{--bg:#07081a;--bg2:#1b1040;--fg:#e8ecff;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.14);--mute:#9aa3cf;--a:#22d3ee;--b:#e879f9}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;height:100%;display:flex;flex-direction:column;background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg) 70%);color:var(--fg);font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+header{display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:space-between;padding:10px 14px 0}
+h1{margin:0;font-size:16px;letter-spacing:.1em;font-weight:800}
+h1 b{color:var(--b);text-shadow:0 0 12px var(--b)}
+.hud{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 14px;font:600 12px ui-monospace,Menlo,monospace;color:var(--mute)}
+.hud span b{color:var(--a);font-size:15px;text-shadow:0 0 10px var(--a)}
+#stage{position:relative;flex:0 0 42%;min-height:240px;touch-action:none;cursor:grab}
+#stage canvas{display:block;width:100%;height:100%}
+#toast{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;font-size:42px;font-weight:900;letter-spacing:.2em;opacity:0;color:#fff;text-shadow:0 0 24px var(--a),0 0 48px var(--b);transform:scale(.6);transition:.4s}
+#toast.show{opacity:1;transform:scale(1)}
+#panel{flex:1;overflow:auto;padding:8px 12px 16px;border-top:1px solid var(--line);background:var(--card);backdrop-filter:blur(14px)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+button{font:inherit;font-weight:700;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;transition:.15s}
+button:hover,button:active{border-color:var(--a);box-shadow:0 0 14px -2px var(--a);transform:translateY(-1px)}
+.pri{background:linear-gradient(90deg,var(--a),var(--b));color:#fff;border:0}
+.tabs{display:flex;gap:6px;margin:4px 0 8px}
+.tabs button{flex:1;padding:7px 2px;font-size:12px}
+.tabs button.on{border-color:var(--b);box-shadow:0 0 14px -2px var(--b)}
+input[type=range]{accent-color:var(--b);flex:1;min-width:90px}
+input[type=text]{flex:1;min-width:140px;font:600 14px ui-monospace,Menlo,monospace;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+.pad{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.pad button{padding:10px 0;font-family:ui-monospace,Menlo,monospace}
+.card{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:var(--card)}
+.card h3{margin:0;font-size:14px}.card small{color:var(--mute)}
+.alg{margin:8px 0;font:600 15px/1.9 ui-monospace,Menlo,monospace;overflow-wrap:anywhere}
+.alg span{padding:2px 4px;border-radius:6px;margin-right:2px}
+.alg span.on{background:var(--b);color:#fff;box-shadow:0 0 12px var(--b)}
+.note p{margin:6px 0}.note code{color:var(--a);font-weight:700}
+.hide{display:none}
+#ad{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:50;display:none;justify-content:center;pointer-events:none}
+#ad.show{display:flex}
+@keyframes pop{from{transform:translateY(50px) scale(.9);opacity:0}}
+.adbox{pointer-events:auto;width:min(340px,100%);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.45),0 0 24px -6px var(--b);animation:pop .4s cubic-bezier(.2,1.4,.4,1)}
+.adbox small{color:var(--mute);letter-spacing:.12em}
+#adslot{min-height:90px;border-radius:12px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding:16px;color:#fff}
+#adslot b{font-size:18px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.rr{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;margin:4px 0}
+#nm{position:fixed;inset:0;z-index:60;display:none;place-items:center;background:rgba(5,6,20,.9);backdrop-filter:blur(8px);padding:16px}
+#nm.show{display:grid}
+#nm h2{margin:0;font-size:20px;letter-spacing:.12em}
+#nm p{margin:0;color:var(--mute)}
+</style>
+</head>
+<body>
+<header><h1>HARD<b>//</b>CLICK CUBE</h1><div class="hud"><span>MOVES <b id="mv">0</b></span><span>TIME <b id="tm">0.0</b></span><span>BEST <b id="bs">–</b></span><span id="whoc" style="cursor:pointer">👤 <b id="who">–</b></span></div></header>
+<div id="stage"><div id="toast">SOLVED</div></div>
+<div id="panel">
+<div class="row"><button class="pri" id="scr">⚡ Scramble</button><button id="rst">Reset</button><button id="flip">↕ Flip</button><button id="turn">↔ Turn</button><label style="color:var(--mute)">Speed</label><input type="range" id="spd" min="60" max="500" value="240" style="direction:rtl"></div>
+<div class="tabs" id="tabs"></div>
+<div id="t-pad"><div class="pad" id="pad"></div>
+<div class="row"><input type="text" id="cust" placeholder="Type moves: R U R' U' ..." autocapitalize="off" autocomplete="off"><button id="run">Run</button></div>
+<p style="color:var(--mute);margin:4px 0">Drag to spin the cube any direction, even upside down. R L U D F B always follow your view, so turn the cube around and L becomes R. Keys: letter = turn, Shift = prime.</p></div>
+<div id="t-note" class="note hide">
+<p><code>R L U D F B</code> – turn the Right, Left, Up, Down, Front, Back face 90° clockwise as you look at that face.</p>
+<p><code>X'</code> – prime: counter-clockwise. <code>X2</code> – a half turn (180°).</p>
+<p><code>M E S</code> – middle slices. M follows L, E follows D, S follows F.</p>
+<p><code>r l u d f b</code> – wide turns: the face plus the middle slice with it.</p>
+<p><code>x y z</code> – rotate the whole cube like R, U, F.</p>
+<p><b>OLL</b> (Orient Last Layer) makes the whole top face one color. <b>PLL</b> (Permute Last Layer) then moves the top pieces into their right places. Together with the cross and F2L they finish the CFOP method.</p>
+<p><b>How to practise:</b> press <i>Setup</i> to jump the cube into the case, then <i>Play</i> to watch the algorithm solve it step by step.</p>
+</div>
+<div id="t-oll" class="hide"></div><div id="t-pll" class="hide"></div><div id="t-rec" class="hide"></div><div id="t-world" class="hide"></div>
+</div>
+<div id="nm" class="show"><div class="adbox"><h2>HARD CLICK CUBE</h2><p>Enter your name to start playing</p><input type="text" id="nmin" enterkeyhint="go" maxlength="16" placeholder="Your name" autocomplete="off"><button id="nmgo" class="pri">Play ▶</button></div></div>
+<div id="ad"><div class="adbox"><small>ADVERTISEMENT · 30 SECONDS</small><div id="adslot"></div><button id="adtrial" class="pri">🚫 Start 1-day free trial – no ads</button><button id="adc" disabled>Continue</button></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const D={R:['x',[1],-1],L:['x',[-1],1],M:['x',[0],1],r:['x',[1,0],-1],l:['x',[-1,0],1],U:['y',[1],-1],D:['y',[-1],1],E:['y',[0],1],u:['y',[1,0],-1],d:['y',[-1,0],1],F:['z',[1],-1],B:['z',[-1],1],S:['z',[0],-1],f:['z',[1,0],-1],b:['z',[-1,0],1],x:['x',[-1,0,1],-1],y:['y',[-1,0,1],-1],z:['z',[-1,0,1],-1]};
+const ALGS={OLL:[
+['Sune','Fish – the classic','R U R\' U R U2 R\''],
+['Anti-Sune','Mirror of Sune','R U2 R\' U\' R U\' R\''],
+['OLL 21 · H','Cross, four twisted corners','R U2 R\' U\' R U R\' U\' R U\' R\''],
+['OLL 22 · Pi','Cross, two pairs of corners','R U2 R2 U\' R2 U\' R2 U2 R'],
+['OLL 23 · Headlights','Cross, two corners oriented','R2 D R\' U2 R D\' R\' U2 R\''],
+['OLL 24 · Chameleon','Cross, two adjacent corners','r U R\' U\' r\' F R F\''],
+['OLL 25 · Bowtie','Cross, two adjacent corners','F\' r U R\' U\' r\' F R'],
+['OLL 33 · T-shape','Small T','R U R\' U\' R\' F R F\''],
+['OLL 35 · Fish','Square-ish fish','R U2 R2 F R F\' R U2 R\''],
+['OLL 37 · Fish','Fish variation','F R\' F\' R U R U\' R\''],
+['OLL 44 · P-shape','Small P','F U R U\' R\' F\''],
+['OLL 45 · T-line','Edges: a bar','F R U R\' U\' F\''],
+['OLL 48 · Line','Double-flip bar','F R U R\' U\' R U R\' U\' F\''],
+['OLL 51 · Line','Edges: a bar plus corners','F U R U\' R\' U R U\' R\' F\''],
+['OLL 1 · Dot','Only the dot is solved','R U2 R2 F R F\' U2 R\' F R F\'']],
+PLL:[
+['Aa','Corner 3-cycle','x R\' U R\' D2 R U\' R\' D2 R2 x\''],
+['Ab','Corner 3-cycle (reverse)','x R2 D2 R U R\' D2 R U\' R x\''],
+['E','Swap corners diagonally','x\' R U\' R\' D R U R\' D\' R U R\' D R U\' R\' D\' x'],
+['F','Swap edges and corners','R\' U\' F\' R U R\' U\' R\' F R2 U\' R\' U\' R U R\' U R'],
+['Ga','G-perm','R2 U R\' U R\' U\' R U\' R2 D U\' R\' U R D\''],
+['Gb','G-perm','R\' U\' R U D\' R2 U R\' U R U\' R U\' R2 D'],
+['Gc','G-perm','R2 U\' R U\' R U R\' U R2 D\' U R U\' R\' D'],
+['Gd','G-perm','R U R\' U\' D R2 U\' R U\' R\' U R\' U R2 D\''],
+['H','Swap opposite edges','M2 U M2 U2 M2 U M2'],
+['Ja','Swap two edges and corners','R\' U L\' U2 R U\' R\' U2 R L'],
+['Jb','Swap two edges and corners','R U R\' F\' R U R\' U\' R\' F R2 U\' R\''],
+['Na','Swap two corners and two edges','R U R\' U R U R\' F\' R U R\' U\' R\' F R2 U\' R\' U2 R U\' R\''],
+['Nb','Swap two corners and two edges','R\' U R U\' R\' F\' U\' F R U R\' F R\' F\' R U\' R'],
+['Ra','R-perm','R U\' R\' U\' R U R D R\' U\' R D\' R\' U2 R\''],
+['Rb','R-perm','R\' U2 R U2 R\' F R U R\' U\' R\' F\' R2'],
+['T','Swap edges and corners','R U R\' U\' R\' F R2 U\' R\' U\' R U R\' F\''],
+['Ua','Edge 3-cycle','M2 U M U2 M\' U M2'],
+['Ub','Edge 3-cycle (reverse)','M2 U\' M U2 M\' U\' M2'],
+['V','Diagonal swap','R\' U R\' U\' y R\' F\' R2 U\' R\' U R\' F R F'],
+['Y','Diagonal swap','F R U\' R\' U\' R U R\' F\' R U R\' U\' R\' F R F\''],
+['Z','Swap adjacent edges','M\' U\' M2 U\' M2 U\' M\' U2 M2']]};
+
+/* ---------- three.js scene ---------- */
+const stage=$('stage'),renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));stage.prepend(renderer.domElement);
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(38,1,.1,100);
+scene.add(new THREE.AmbientLight(0xffffff,.75));
+const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(5,8,6);scene.add(dl);
+const dl2=new THREE.DirectionalLight(0xb48cff,.4);dl2.position.set(-6,-3,-4);scene.add(dl2);
+const COL={'1,0,0':0xc8102e,'-1,0,0':0xff5a00,'0,1,0':0xf5f5f5,'0,-1,0':0xfff000,'0,0,1':0x1fbf4a,'0,0,-1':0x1e63e9};
+const bodyGeo=new THREE.BoxGeometry(.98,.98,.98),bodyMat=new THREE.MeshStandardMaterial({color:0x0c0d16,roughness:.5});
+const stGeo=new THREE.PlaneGeometry(.84,.84),stMat={};
+for(const k in COL)stMat[k]=new THREE.MeshStandardMaterial({color:COL[k],roughness:.3,emissive:COL[k],emissiveIntensity:.14});
+const root=new THREE.Group();scene.add(root);root.rotation.set(.5,-.6,0);
+let cubies=[];
+function build(){
+  cubies.forEach(c=>root.remove(c));cubies=[];
+  for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){
+    const c=new THREE.Group();c.position.set(x,y,z);c.add(new THREE.Mesh(bodyGeo,bodyMat));c.stickers=[];
+    [[x,1,0,0],[y,0,1,0],[z,0,0,1]].forEach(([v,a,b,d])=>{
+      if(Math.abs(v)!==1)return;
+      const n=new THREE.Vector3(a*v,b*v,d*v),s=new THREE.Mesh(stGeo,stMat[[n.x,n.y,n.z]]);
+      s.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),n);s.position.copy(n).multiplyScalar(.495);
+      s.userData={n,col:[n.x,n.y,n.z].join()};c.add(s);c.stickers.push(s);
+    });
+    root.add(c);cubies.push(c);
+  }
+}
+build();
+let rad=11,va=null,setupQ=null;const AX=new THREE.Vector3(1,0,0),AY=new THREE.Vector3(0,1,0);
+function placeCam(){cam.position.set(0,0,rad);cam.lookAt(0,0,0)}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(stage);resize();placeCam();
+let drag=null;
+stage.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];stage.setPointerCapture(e.pointerId);stage.style.cursor='grabbing'});
+stage.addEventListener('pointermove',e=>{if(!drag)return;va=null;root.rotateOnWorldAxis(AY,(e.clientX-drag[0])*.008);root.rotateOnWorldAxis(AX,(e.clientY-drag[1])*.008);root.quaternion.normalize();drag=[e.clientX,e.clientY]});
+stage.addEventListener('pointerup',()=>{drag=null;stage.style.cursor='grab'});
+stage.addEventListener('wheel',e=>{e.preventDefault();rad=Math.min(20,Math.max(7,rad+e.deltaY*.01));placeCam()},{passive:false});
+
+/* ---------- move engine ---------- */
+let queue=[],cur=null,moves=0,t0=0,armed=false,tEnd=0,hl=null;
+const parse=s=>s.replace(/[’‘`]/g,"'").split(/\s+/).filter(Boolean);
+const inv=a=>a.slice().reverse().map(t=>t.endsWith("'")?t.slice(0,-1):t.endsWith('2')?t:t+"'");
+const valid=t=>/^[RLUDFBMESxyzrludfb](2'?|')?$/.test(t);
+function begin(it){
+  const m=/^(.)(2'?|')?$/.exec(it.t),d=D[m[1]],k=m[2]==="'"?-1:m[2]?2:1;
+  const w=new THREE.Vector3(d[0]==='x'?1:0,d[0]==='y'?1:0,d[0]==='z'?1:0).applyQuaternion(root.quaternion.clone().invert());
+  const a=[w.x,w.y,w.z],i=a.reduce((p,v,j)=>Math.abs(v)>Math.abs(a[p])?j:p,0),s=a[i]<0?-1:1,ax='xyz'[i];
+  const piv=new THREE.Group();root.add(piv);
+  const sel=cubies.filter(c=>d[1].includes(s*Math.round(c.position[ax])));
+  sel.forEach(c=>piv.attach(c));
+  return{it,piv,sel,ax,tgt:s*d[2]*k*Math.PI/2,t:0};
+}
+function end(c){
+  c.piv.rotation[c.ax]=c.tgt;c.piv.updateMatrixWorld(true);
+  c.sel.forEach(q=>{root.attach(q);['x','y','z'].forEach(a=>q.position[a]=Math.round(q.position[a]))});
+  root.remove(c.piv);
+}
+function isSolved(){
+  const f={};
+  cubies.forEach(c=>c.stickers.forEach(s=>{
+    const n=s.userData.n.clone().applyQuaternion(c.quaternion);
+    const key=[n.x,n.y,n.z].map(Math.round).join();(f[key]=f[key]||new Set).add(s.userData.col);
+  }));
+  return Object.values(f).every(s=>s.size===1);
+}
+function done(it){
+  if(it.u){setupQ=null;moves++;if(armed&&!t0)t0=performance.now();$('mv').textContent=moves}
+  if(!queue.length&&!cur){
+    if(hl){hl.classList.remove('on');hl=null}
+    if(armed&&t0&&isSolved()){armed=false;tEnd=performance.now();addRec((tEnd-t0)/1000,moves);const t=$('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+  }
+}
+function mark(it){if(hl)hl.classList.remove('on');hl=it.el||null;if(hl)hl.classList.add('on')}
+function tick(dt){
+  while(!cur&&queue.length){
+    const it=queue.shift();mark(it);cur=begin(it);
+    if(it.inst){end(cur);cur=null;done(it)}
+  }
+  if(cur){
+    cur.t+=dt;const dur=cur.it.dur||+$('spd').value,p=Math.min(1,cur.t/dur);
+    cur.piv.rotation[cur.ax]=cur.tgt*(p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2);
+    if(p>=1){const it=cur.it;end(cur);cur=null;done(it)}
+  }
+}
+let last=performance.now();
+(function loop(now){
+  const dt=Math.min(50,now-last);tick(dt);last=now;
+  if(va){va.t+=dt;const p=Math.min(1,va.t/550),e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;root.quaternion.copy(va.a).slerp(va.b,e);if(p>=1)va=null}
+  if(armed&&t0)$('tm').textContent=((now-t0)/1000).toFixed(1);
+  else if(!armed&&t0&&tEnd)$('tm').textContent=((tEnd-t0)/1000).toFixed(1);
+  renderer.render(scene,cam);requestAnimationFrame(loop);
+})(last);
+
+const push=(toks,o={})=>{if(!pname)return;toks.forEach(t=>valid(t)&&queue.push({t,...o}))};
+function scramble(){
+  setupQ=null;queue=[];if(cur){end(cur);cur=null}
+  const f='UDRLFB';let p='',s=[];
+  for(let i=0;i<22;i++){let a;do a=f[Math.random()*6|0];while(a===p||(f.indexOf(a)>>1)===(f.indexOf(p)>>1)&&p);p=a;s.push(a+['',"'",'2'][Math.random()*3|0])}
+  push(s,{dur:80});moves=0;t0=0;tEnd=0;armed=true;$('mv').textContent=0;$('tm').textContent='0.0';
+}
+function reset(){setupQ=null;queue=[];if(cur){root.remove(cur.piv);cur=null}build();moves=0;t0=0;tEnd=0;armed=false;$('mv').textContent=0;$('tm').textContent='0.0'}
+
+/* ---------- UI ---------- */
+$('scr').onclick=scramble;$('rst').onclick=reset;
+const spin=(v,ang)=>{va={t:0,a:root.quaternion.clone(),b:new THREE.Quaternion().setFromAxisAngle(v,ang).multiply(root.quaternion)}};
+$('flip').onclick=()=>spin(AX,Math.PI);$('turn').onclick=()=>spin(AY,Math.PI);
+$('run').onclick=()=>{push(parse($('cust').value),{u:1})};
+$('cust').addEventListener('keydown',e=>{if(e.key==='Enter')$('run').click()});
+const pad=$('pad');
+const mk=t=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>push([t],{u:1});pad.append(b)};
+['UDRLFB','MESxyz','udrlfb'].forEach(r=>{[...r].forEach(t=>mk(t));[...r].forEach(t=>mk(t+"'"))});
+addEventListener('keydown',e=>{
+  if(/INPUT|TEXTAREA/.test(document.activeElement.tagName)||e.metaKey||e.ctrlKey)return;
+  const k=e.key.toLowerCase();if(!'rludfbmesxyz'.includes(k)||k.length!==1)return;
+  let t='xyz'.includes(k)?k:k.toUpperCase();if(e.shiftKey)t+="'";push([t],{u:1});
+});
+function cards(host,list){
+  list.forEach(([n,d,a])=>{
+    const c=document.createElement('div');c.className='card';
+    const toks=parse(a),spans=toks.map(t=>{const s=document.createElement('span');s.textContent=t;return s});
+    c.innerHTML=`<h3>${n} <small>· ${d}</small></h3>`;
+    const al=document.createElement('div');al.className='alg';spans.forEach(s=>al.append(s,' '));c.append(al);
+    const r=document.createElement('div');r.className='row';
+    const b1=document.createElement('button');b1.textContent='⟲ Setup case';
+    b1.onclick=()=>{reset();root.rotation.set(.5,-.6,0);va=null;setupQ=root.quaternion.clone();push(inv(toks),{inst:1})};
+    const b2=document.createElement('button');b2.className='pri';b2.textContent='▶ Play';
+    b2.onclick=()=>{if(setupQ){root.quaternion.copy(setupQ);va=null}toks.forEach((t,i)=>valid(t)&&queue.push({t,el:spans[i]}))};
+    r.append(b1,b2);c.append(r);host.append(c);
+  });
+}
+cards($('t-oll'),ALGS.OLL);cards($('t-pll'),ALGS.PLL);
+const T=[['pad','🎮 Play'],['note','📖 Notes'],['oll','OLL'],['pll','PLL'],['rec','🏆 Mine'],['world','🌍 World']];
+T.forEach(([id,l],i)=>{
+  const b=document.createElement('button');b.textContent=l;if(!i)b.className='on';
+  b.onclick=()=>{T.forEach(([k])=>$('t-'+k).classList.toggle('hide',k!==id));[...$('tabs').children].forEach(x=>x.classList.toggle('on',x===b))};
+  $('tabs').append(b);
+});
+/* ---------- ads: 30s house ads + 1-day ad-free trial ---------- */
+const store={g(k){try{return localStorage.getItem(k)}catch(e){return this[k]||null}},s(k,v){try{localStorage.setItem(k,v)}catch(e){this[k]=v}}};
+const ADS=[['⚡ SpeedCube Pro','Magnetic 3x3 built for sub-10 second solves.','#7c3aed,#06b6d4'],['🧠 Learn CFOP in 7 days','Video course: F2L, OLL and PLL made simple.','#ef4444,#f59e0b'],['🏆 Weekly Cube Cup','Join the online solving contest and win prizes.','#10b981,#3b82f6']];
+let lastAd=Date.now(),adTimer=null,pend=null;
+const freeLeft=()=>Math.max(0,(+store.g('ad_free_until')||0)-Date.now());
+function noadsLabel(){const l=freeLeft(),b=$('noads')||{};if(l>0){b.disabled=false;b.textContent='✅ Ad-free · '+(l>36e5?Math.ceil(l/36e5)+'h':Math.ceil(l/6e4)+'m')+' left'}else if(store.g('trial_used')){b.textContent='Trial ended';b.disabled=true}else b.textContent='🚫 No ads · 1-day trial'}
+function hideAd(){clearInterval(adTimer);$('ad').classList.remove('show')}
+function startTrial(){if(store.g('trial_used'))return;store.s('trial_used','1');store.s('ad_free_until',Date.now()+864e5);hideAd();noadsLabel();const f=pend;pend=null;f&&f()}
+function showAd(cont){
+  const a=ADS[Math.random()*ADS.length|0],c=$('adc');let n=30;lastAd=Date.now();pend=cont||null;
+  /* To use a real ad network, put its code in #adslot here instead of the house ads. */
+  $(
